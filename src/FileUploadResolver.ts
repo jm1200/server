@@ -4,6 +4,7 @@ const path = require("path");
 import { Stream } from "stream";
 import { createWriteStream } from "fs";
 import { parse } from "ofx-js";
+import { parseTransactions } from "./modules/fileUploadResolver/parseTransactions";
 const fs = require("fs");
 
 export interface Upload {
@@ -12,10 +13,40 @@ export interface Upload {
   encoding: string;
   createReadStream: () => Stream;
 }
+
+@ObjectType()
+class Transaction {
+  @Field()
+  account: String;
+  @Field()
+  type: String;
+  @Field()
+  datePosted: String;
+  @Field()
+  transId: String;
+  @Field({ nullable: true })
+  name: String;
+  @Field()
+  memo: String;
+  @Field()
+  amount: String;
+}
+
 @ObjectType()
 class UploadResponse {
   @Field()
   uploaded: boolean;
+  @Field()
+  account?: string;
+  @Field()
+  rangeStart?: string;
+  @Field()
+  rangeEnd?: string;
+  // @ts-ignore
+  @Field(type => [Transaction])
+  transactions?: Transaction[];
+  // @Field(() => TransResponse)
+  // transactions?: TransResponse;
 }
 
 @Resolver()
@@ -49,42 +80,15 @@ export class FileUploadResolver {
       return { uploaded: false };
     }
 
-    let account: string;
-    if (parsedData.OFX.BANKMSGSRSV1) {
-      account = "Bank";
-    } else if (parsedData.OFX.CREDITCARDMSGSRSV1) {
-      account = "Creditcard";
-    } else {
-      throw new Error("Could not parse account");
-      return { uploaded: false };
-    }
-
-    let transactions: any;
-    if (account === "Bank") {
-      transactions = parsedData.OFX.BANKMSGSRSV1.STMTTRNRS.STMTRS.BANKTRANLIST;
-    } else if (account === "Creditcard") {
-      transactions =
-        parsedData.OFX.CREDITCARDMSGSRSV1.CCSTMTTRNRS.CCSTMTRS.BANKTRANLIST;
-    }
+    let transactions = parseTransactions(parsedData);
 
     console.log("TRANSACTIONS: ", transactions);
-    return { uploaded: true };
+    return {
+      uploaded: true,
+      account: transactions.account,
+      rangeStart: transactions.rangeStart,
+      rangeEnd: transactions.rangeEnd,
+      transactions: transactions.transactions
+    };
   }
 }
-
-// @Resolver()
-// export class FileUploadResolver {
-//   @Mutation(() => Boolean)
-//   async uploadFile(
-//     @Arg("file", () => GraphQLUpload!) { createReadStream, filename }: Upload
-//   ): Promise<Boolean> {
-//     console.log("FILE: ", createReadStream, filename);
-//     await new Promise(res =>
-//       createReadStream()
-//         .pipe(createWriteStream(path.join(__dirname, "../tempFiles", filename)))
-//         .on("close", res)
-//     );
-
-//     return true;
-//   }
-// }

@@ -5,6 +5,7 @@ import { Stream } from "stream";
 import { createWriteStream } from "fs";
 import { parse } from "ofx-js";
 import { parseTransactions } from "./modules/fileUploadResolver/parseTransactions";
+import { Transaction } from "./entity/Transaction";
 const fs = require("fs");
 
 export interface Upload {
@@ -12,24 +13,6 @@ export interface Upload {
   mimetype: string;
   encoding: string;
   createReadStream: () => Stream;
-}
-
-@ObjectType()
-class Transaction {
-  @Field()
-  account: String;
-  @Field()
-  type: String;
-  @Field()
-  datePosted: String;
-  @Field()
-  transId: String;
-  @Field({ nullable: true })
-  name: String;
-  @Field()
-  memo: String;
-  @Field()
-  amount: String;
 }
 
 @ObjectType()
@@ -42,11 +25,8 @@ class UploadResponse {
   rangeStart?: string;
   @Field()
   rangeEnd?: string;
-  // @ts-ignore
-  @Field(type => [Transaction])
+  @Field(() => [Transaction])
   transactions?: Transaction[];
-  // @Field(() => TransResponse)
-  // transactions?: TransResponse;
 }
 
 @Resolver()
@@ -83,6 +63,7 @@ export class FileUploadResolver {
     let transactions = parseTransactions(parsedData);
 
     console.log("TRANSACTIONS: ", transactions);
+    Transaction.insert(transactions.transactions);
     return {
       uploaded: true,
       account: transactions.account,

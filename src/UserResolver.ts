@@ -116,11 +116,12 @@ export class UserResolver {
     };
   }
 
-  @Mutation(() => Boolean)
+  @Mutation(() => LoginResponse)
   async register(
     @Arg("email") email: string,
-    @Arg("password") password: string
-  ) {
+    @Arg("password") password: string,
+    @Ctx() { res }: MyContext
+  ): Promise<LoginResponse> {
     const hashedPassword = await hash(password, 12);
 
     try {
@@ -130,9 +131,28 @@ export class UserResolver {
       });
     } catch (err) {
       console.log(err);
-      return false;
+      throw new Error("could not insert User into database");
+    }
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      throw new Error("Could not find user");
     }
 
-    return true;
+    const valid = await compare(password, user.password);
+
+    if (!valid) {
+      throw new Error("bad password");
+    }
+
+    //login successful
+
+    //res.cookie send refresh token in cookie/jid
+    sendRefreshToken(res, createRefreshToken(user));
+
+    return {
+      accessToken: createAccessToken(user),
+      user
+    };
   }
 }

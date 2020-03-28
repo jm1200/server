@@ -17,6 +17,7 @@ import { isAuth } from "./isAuth";
 import { sendRefreshToken } from "./sendRefreshToken";
 import { getConnection } from "typeorm";
 import { verify } from "jsonwebtoken";
+import { ApolloError } from "apollo-server-express";
 
 @ObjectType()
 class LoginResponse {
@@ -87,22 +88,23 @@ export class UserResolver {
   //The cookie is then used to refresh the Access token when it expires.
   //the access token is only good for 15min. The refresh for 7d. We can't make the user
   //sign in every 15 min.
-  @Mutation(() => LoginResponse)
+  @Mutation(() => LoginResponse, { nullable: true })
   async login(
     @Arg("email") email: string,
     @Arg("password") password: string,
     @Ctx() { res }: MyContext
-  ): Promise<LoginResponse> {
+  ): Promise<LoginResponse | null> {
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
-      throw new Error("Could not find user");
+      throw new ApolloError("Invalid email");
+      return null;
     }
 
     const valid = await compare(password, user.password);
 
     if (!valid) {
-      throw new Error("bad password");
+      throw new Error("Incorrect password");
     }
 
     //login successful
@@ -116,12 +118,12 @@ export class UserResolver {
     };
   }
 
-  @Mutation(() => LoginResponse)
+  @Mutation(() => LoginResponse, { nullable: true })
   async register(
     @Arg("email") email: string,
     @Arg("password") password: string,
-    @Ctx() { res }: MyContext
-  ): Promise<LoginResponse> {
+    @Ctx() { req, res }: MyContext
+  ): Promise<LoginResponse | null> {
     const hashedPassword = await hash(password, 12);
 
     try {
@@ -131,28 +133,8 @@ export class UserResolver {
       });
     } catch (err) {
       console.log(err);
-      throw new Error("could not insert User into database");
+      throw new Error(err.message);
     }
-    const user = await User.findOne({ where: { email } });
-
-    if (!user) {
-      throw new Error("Could not find user");
-    }
-
-    const valid = await compare(password, user.password);
-
-    if (!valid) {
-      throw new Error("bad password");
-    }
-
-    //login successful
-
-    //res.cookie send refresh token in cookie/jid
-    sendRefreshToken(res, createRefreshToken(user));
-
-    return {
-      accessToken: createAccessToken(user),
-      user
-    };
+    return this.login(email, password, { req, res });
   }
 }

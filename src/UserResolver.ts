@@ -23,7 +23,7 @@ import { ApolloError } from "apollo-server-express";
 class LoginResponse {
   @Field()
   accessToken: string;
-  //must explictly define type for graphql.
+  //must explicitly define type. User not primitive
   @Field(() => User)
   user: User;
 }
@@ -88,17 +88,16 @@ export class UserResolver {
   //The cookie is then used to refresh the Access token when it expires.
   //the access token is only good for 15min. The refresh for 7d. We can't make the user
   //sign in every 15 min.
-  @Mutation(() => LoginResponse, { nullable: true })
+  @Mutation(() => LoginResponse)
   async login(
     @Arg("email") email: string,
     @Arg("password") password: string,
     @Ctx() { res }: MyContext
-  ): Promise<LoginResponse | null> {
+  ): Promise<LoginResponse> {
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
       throw new ApolloError("Invalid email");
-      return null;
     }
 
     const valid = await compare(password, user.password);
@@ -118,12 +117,12 @@ export class UserResolver {
     };
   }
 
-  @Mutation(() => LoginResponse, { nullable: true })
+  @Mutation(() => LoginResponse)
   async register(
     @Arg("email") email: string,
     @Arg("password") password: string,
     @Ctx() { req, res }: MyContext
-  ): Promise<LoginResponse | null> {
+  ): Promise<LoginResponse> {
     const hashedPassword = await hash(password, 12);
 
     try {

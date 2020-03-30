@@ -18,6 +18,7 @@ import { sendRefreshToken } from "./sendRefreshToken";
 import { getConnection } from "typeorm";
 import { verify } from "jsonwebtoken";
 import { ApolloError } from "apollo-server-express";
+import { UserSettings } from "./entity/UserSettings";
 
 @ObjectType()
 class LoginResponse {
@@ -26,6 +27,15 @@ class LoginResponse {
   //must explictly define type for graphql.
   @Field(() => User)
   user: User;
+  @Field(() => UserSettings, { nullable: true })
+  userSettings: UserSettings | null;
+}
+@ObjectType()
+class MeResponse {
+  @Field(() => User, { nullable: true })
+  user: User | null;
+  @Field(() => UserSettings, { nullable: true })
+  userSettings: UserSettings | null;
 }
 
 @Resolver()
@@ -47,8 +57,8 @@ export class UserResolver {
     return User.find();
   }
 
-  @Query(() => User, { nullable: true })
-  me(@Ctx() context: MyContext) {
+  @Query(() => MeResponse, { nullable: true })
+  async me(@Ctx() context: MyContext): Promise<MeResponse | null> {
     const authorization = context.req.headers["authorization"];
     //if the user did not pass in authorization inside the header, then deny access
     if (!authorization) {
@@ -56,8 +66,12 @@ export class UserResolver {
     }
     try {
       const token = authorization.split(" ")[1];
+      console.log("UserResolver 69, token: ", token);
       const payload: any = verify(token, process.env.ACCESS_TOKEN_SECRET!);
-      return User.findOne(payload.userId);
+      console.log("UserResolver 71, payload: ", payload);
+      const user = (await User.findOne(payload.userId)) || null;
+      const userSettings = (await UserSettings.findOne(payload.userId)) || null;
+      return { user, userSettings };
     } catch (err) {
       console.log(err);
       return null;
@@ -111,10 +125,12 @@ export class UserResolver {
 
     //res.cookie send refresh token in cookie/jid
     sendRefreshToken(res, createRefreshToken(user));
+    const userSettings = (await UserSettings.findOne(user.id)) || null;
 
     return {
       accessToken: createAccessToken(user),
-      user
+      user,
+      userSettings
     };
   }
 
@@ -127,10 +143,19 @@ export class UserResolver {
     const hashedPassword = await hash(password, 12);
 
     try {
-      await User.insert({
+      const userInsert = await User.insert({
         email,
         password: hashedPassword
       });
+      console.log("user insert result: ", userInsert);
+      const userId: number = userInsert.raw[0].id;
+      const createSettings = await UserSettings.insert({
+        userId,
+        theme: "dark"
+      });
+      console.log("Inserted settings result: ", createSettings);
+
+      console.log("User inserted: ", userInsert);
     } catch (err) {
       console.log(err);
       throw new Error(err.message);

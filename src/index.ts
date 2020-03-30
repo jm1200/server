@@ -12,6 +12,7 @@ import { createAccessToken, createRefreshToken } from "./auth";
 import { sendRefreshToken } from "./sendRefreshToken";
 import cors from "cors";
 import { FileUploadResolver } from "./FileUploadResolver";
+//import { UserSettingsResolver } from "./UserSettingsResolver";
 
 (async () => {
   const app = Express();

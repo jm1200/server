@@ -8,5 +8,12 @@ Register user:
 7. test login
 8. test for accesstoken, user.email, user.id, userSettings.theme
 
+userSettings:
+1. register user
+2. get accesstoken
+3. confirm me query usersettings theme
+4. change theme with updateTheme mutation
+5. confirm them changed
+
 
 useAuthMiddleware tests?

@@ -30,13 +30,13 @@ class LoginResponse {
   @Field(() => UserSettings)
   userSettings: UserSettings;
 }
-// @ObjectType()
-// class MeResponse {
-//   @Field(() => User, { nullable: true })
-//   user: User | null;
-//   @Field(() => UserSettings, { nullable: true })
-//   userSettings: UserSettings | null;
-// }
+@ObjectType()
+class MeResponse {
+  @Field(() => User, { nullable: true })
+  user: User | null;
+  @Field(() => UserSettings, { nullable: true })
+  userSettings: UserSettings | null;
+}
 
 @Resolver()
 export class UserResolver {
@@ -57,22 +57,24 @@ export class UserResolver {
     return User.find();
   }
 
-  @Query(() => User, { nullable: true })
-  me(@Ctx() context: MyContext) {
+  @Query(() => MeResponse, { nullable: true })
+  async me(@Ctx() context: MyContext): Promise<MeResponse> {
     const authorization = context.req.headers["authorization"];
     //if the user did not pass in authorization inside the header, then deny access
     if (!authorization) {
-      return null;
+      return { user: null, userSettings: null };
     }
     try {
       const token = authorization.split(" ")[1];
       const payload: any = verify(token, process.env.ACCESS_TOKEN_SECRET!);
-      return User.findOne(payload.userId);
+      const user = await User.findOne(payload.userId);
+      //if there is an authorization header, there will be a user.
+      const userSettings = await UserSettings.findOne(user!.id);
+      return { user: user!, userSettings: userSettings! };
     } catch (err) {
       console.log(err);
-      return null;
+      return { user: null, userSettings: null };
     }
-    return null;
   }
 
   @Mutation(() => Boolean)

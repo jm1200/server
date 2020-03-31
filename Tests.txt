@@ -1,0 +1,9 @@
+Register user:
+1. check user got created
+2. test userSettings got created
+3. get access token from user
+4. insert access token and check me query
+5. test for email and default theme
+6. test logout
+7. test login
+8. test for accesstoken, user.email, user.id, userSettings.theme

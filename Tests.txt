@@ -7,3 +7,6 @@ Register user:
 6. test logout
 7. test login
 8. test for accesstoken, user.email, user.id, userSettings.theme
+
+
+useAuthMiddleware tests?

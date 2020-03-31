@@ -12,6 +12,7 @@ import { createAccessToken, createRefreshToken } from "./auth";
 import { sendRefreshToken } from "./sendRefreshToken";
 import cors from "cors";
 import { FileUploadResolver } from "./FileUploadResolver";
+import { UserSettingsResolver } from "./UserSettingsResolver";
 
 (async () => {
   const app = Express();
@@ -78,7 +79,7 @@ import { FileUploadResolver } from "./FileUploadResolver";
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [UserResolver, FileUploadResolver]
+      resolvers: [UserResolver, FileUploadResolver, UserSettingsResolver]
     }),
     context: ({ req, res }) => ({ req, res })
   });

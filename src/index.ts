@@ -49,7 +49,6 @@ import { UserSettingsResolver } from "./UserSettingsResolver";
       console.log(err);
       return res.send({ ok: false, accessToken: "" });
     }
-    console.log("PAYLOAD: ", payload);
 
     //a valid refresh token exists. There could only be a valid token
     //if the user has already had valid access token.

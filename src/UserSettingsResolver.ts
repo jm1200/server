@@ -24,9 +24,6 @@ export class UserSettingsResolver extends BaseEntity {
     @Arg("theme") theme: string,
     @Arg("userId") userId: number
   ): Promise<UserSettings | null> {
-    console.log("New Theme: ", theme);
-    console.log("userId: ", userId);
-
     try {
       await UserSettings.update(userId, { theme });
       const userSettings = await UserSettings.findOne(userId);

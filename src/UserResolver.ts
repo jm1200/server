@@ -144,15 +144,12 @@ export class UserResolver {
         email,
         password: hashedPassword
       });
-      console.log("user insert result: ", userInsert);
+
       const userId: number = userInsert.raw[0].id;
-      const createSettings = await UserSettings.insert({
+      await UserSettings.insert({
         userId,
         theme: "dark"
       });
-      console.log("Inserted settings result: ", createSettings);
-
-      console.log("User inserted: ", userInsert);
     } catch (err) {
       console.log(err);
       throw new Error(err.message);

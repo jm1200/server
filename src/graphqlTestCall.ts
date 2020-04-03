@@ -7,7 +7,7 @@ import { UserResolver } from "./UserResolver";
 export const graphqlTestCall = async (
   query: any,
   variables?: any,
-  userId?: number | string
+  accessToken?: string
 ) => {
   const schema = await buildSchema({
     resolvers: [UserResolver, FileUploadResolver, UserSettingsResolver]
@@ -19,8 +19,8 @@ export const graphqlTestCall = async (
 
     {
       req: {
-        session: {
-          userId
+        headers: {
+          authorization: `bearer ${accessToken}`
         }
       },
       res: {

@@ -19,6 +19,7 @@ import { getConnection } from "typeorm";
 import { verify } from "jsonwebtoken";
 import { ApolloError } from "apollo-server-express";
 import { UserSettings } from "./entity/UserSettings";
+import { RegisterInput } from "./RegisterInput";
 
 @ObjectType()
 class LoginResponse {
@@ -102,8 +103,7 @@ export class UserResolver {
   //sign in every 15 min.
   @Mutation(() => LoginResponse)
   async login(
-    @Arg("email") email: string,
-    @Arg("password") password: string,
+    @Arg("data") { email, password }: RegisterInput,
     @Ctx() { res }: MyContext
   ): Promise<LoginResponse> {
     const user = await User.findOne({ where: { email } });
@@ -133,8 +133,8 @@ export class UserResolver {
 
   @Mutation(() => LoginResponse)
   async register(
-    @Arg("email") email: string,
-    @Arg("password") password: string,
+    @Arg("data") { email, password }: RegisterInput,
+
     @Ctx() { req, res }: MyContext
   ): Promise<LoginResponse> {
     const hashedPassword = await hash(password, 12);
@@ -151,9 +151,10 @@ export class UserResolver {
         theme: "dark"
       });
     } catch (err) {
-      console.log(err);
-      throw new Error(err.message);
+      console.log("test error", err);
+      throw new ApolloError(err.message);
     }
-    return this.login(email, password, { req, res });
+    const data = { email, password };
+    return this.login(data, { req, res });
   }
 }
